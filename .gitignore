@@ -11,3 +11,9 @@ frontend/dist/
 backend/.env
 *.aux
 *.log
+
+# 本地辅助资料，不进仓库
+辅助文件/
+任务对话.md
+框架与实现规划.md
+首届瓯客松AI黑客松大赛温州场参赛须知__*.pdf

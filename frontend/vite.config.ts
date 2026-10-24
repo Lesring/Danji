@@ -14,7 +14,9 @@ function pageOrApi(req: { method?: string; headers: { accept?: string } }) {
 export default defineConfig({
   plugins: [vue()],
   server: {
+    host: "127.0.0.1",
     port: 5173,
+    strictPort: true,
     proxy: {
       "/customers": target,
       "/orders": { target, bypass: pageOrApi },
