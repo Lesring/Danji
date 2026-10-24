@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import re
+from datetime import date, datetime
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -31,6 +32,27 @@ _BRACKET_CHAT = re.compile(r"^\[\d{4}[-/.]\d{1,2}[-/.]\d{1,2}[ T]\d{1,2}:\d{2}")
 _WECHAT_CHAT = re.compile(r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\S+")
 
 
+_HEADER_ALIASES = (
+    "物料",
+    "商品",
+    "产品",
+    "品名",
+    "订单数量",
+    "数量",
+    "件数",
+    "规格",
+    "型号",
+    "订单交期",
+    "交货日期",
+    "交期",
+    "含税单价",
+    "单价",
+    "订单号",
+    "在手数量",
+    "最早可完工日期",
+)
+
+
 def table_to_text(columns: list[str], rows: list[list[str]]) -> str:
     lines = [" | ".join(f"[R1C{index + 1}] {cell}" for index, cell in enumerate(columns))]
     for row_index, row in enumerate(rows, start=2):
@@ -40,30 +62,81 @@ def table_to_text(columns: list[str], rows: list[list[str]]) -> str:
     return "\n".join(lines)
 
 
+def _cell_text(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        if value.hour == value.minute == value.second == 0:
+            return value.strftime("%Y-%m-%d")
+        return value.strftime("%Y-%m-%d %H:%M")
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    if isinstance(value, bool):
+        return "是" if value else "否"
+    return str(value).strip()
+
+
+def _header_index(rows: list[list[str]]) -> int:
+    for index, row in enumerate(rows[:8]):
+        compact = [re.sub(r"\s+", "", cell) for cell in row]
+        hits = sum(1 for cell in compact if any(alias in cell for alias in _HEADER_ALIASES))
+        if hits >= 2:
+            return index
+    return 0
+
+
+def _split_table(rows: list[list[str]]) -> tuple[list[str], list[str], list[list[str]]]:
+    if not rows:
+        return [], [], []
+    width = max(len(row) for row in rows)
+    padded = [row + [""] * (width - len(row)) for row in rows]
+    header_at = _header_index(padded)
+    titles = [" ".join(cell for cell in row if cell) for row in padded[:header_at]]
+    columns = padded[header_at]
+    body = [row for row in padded[header_at + 1 :] if any(cell.strip() for cell in row)]
+    return titles, columns, body
+
+
 def parse_csv(data: bytes) -> tuple[str, dict]:
     text = _decode_text(data)
     reader = csv.reader(io.StringIO(text))
     rows = [[cell.strip() for cell in row] for row in reader if any(cell.strip() for cell in row)]
-    if not rows:
-        return "", {"columns": [], "rows": []}
-    columns, body = rows[0], rows[1:]
-    return table_to_text(columns, body), {"columns": columns, "rows": body}
+    return _table_payload(rows)
 
 
 def parse_xlsx(data: bytes) -> tuple[str, dict]:
     workbook = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
-    sheet = workbook.active
-    rows: list[list[str]] = []
-    for row in sheet.iter_rows(values_only=True):
-        cells = ["" if cell is None else str(cell).strip() for cell in row]
-        if any(cells):
-            rows.append(cells)
-    if not rows:
+    sheets = []
+    parts: list[str] = []
+    for sheet in workbook.worksheets:
+        rows: list[list[str]] = []
+        for row in sheet.iter_rows(values_only=True):
+            cells = [_cell_text(cell) for cell in row]
+            if any(cells):
+                rows.append(cells)
+        titles, columns, body = _split_table(rows)
+        if not columns:
+            continue
+        sheets.append({"sheet": sheet.title, "columns": columns, "rows": body})
+        block = []
+        if len(workbook.worksheets) > 1:
+            block.append(sheet.title)
+        block.extend(titles)
+        block.append(table_to_text(columns, body))
+        parts.append("\n".join(line for line in block if line))
+    if not sheets:
+        return "", {"columns": [], "rows": [], "sheets": []}
+    return "\n\n".join(parts), {"columns": sheets[0]["columns"], "rows": sheets[0]["rows"], "sheets": sheets}
+
+
+def _table_payload(rows: list[list[str]]) -> tuple[str, dict]:
+    titles, columns, body = _split_table(rows)
+    if not columns:
         return "", {"columns": [], "rows": []}
-    width = max(len(row) for row in rows)
-    rows = [row + [""] * (width - len(row)) for row in rows]
-    columns, body = rows[0], rows[1:]
-    return table_to_text(columns, body), {"columns": columns, "rows": body}
+    text = "\n".join([*titles, table_to_text(columns, body)]).strip()
+    return text, {"columns": columns, "rows": body}
 
 
 def parse_upload(filename: str, data: bytes) -> tuple[str, dict, str | None]:

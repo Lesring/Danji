@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -7,7 +7,7 @@ from app.llm.client import ExtractError
 from app.models import Customer
 from app.present import customer_dict, order_dict
 from app.schemas import ChatPreviewIn, CustomerIn, IntakeIn
-from app.services.customer_profile import preview_customer_chat, preview_customer_file
+from app.services.customer_profile import preview_customer_chat, preview_customer_files
 from app.services.intake import confirm_intake, preview_customer_message
 from app.services.records import add_customer, order_count
 
@@ -31,21 +31,33 @@ def preview_customer(payload: ChatPreviewIn):
 
 
 @router.post("/customers/preview/file")
-async def preview_customer_from_file(file: UploadFile = File(...)):
-    data = await file.read()
+async def preview_customer_from_file(
+    file: UploadFile | None = File(None),
+    files: list[UploadFile] | None = File(None),
+    text: str = Form(""),
+):
+    items: list[tuple[str, bytes]] = []
+    uploads = [item for item in [file, *(files or [])] if item is not None and item.filename]
+    if not uploads and not text.strip():
+        raise HTTPException(status_code=400, detail="先粘贴文本，或上传文件")
+    for upload in uploads:
+        items.append((upload.filename or "", await upload.read()))
     try:
-        return preview_customer_file(file.filename or "", data)
+        return preview_customer_files(items, text)
     except ExtractError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 
 
 @router.post("/customers")
 def create_customer(payload: CustomerIn, db: Session = Depends(get_db)):
-    customer, order = add_customer(db, payload)
+    customer, orders = add_customer(db, payload)
     db.commit()
     body = {"customer": customer_dict(customer, order_count(db, customer.id))}
-    if order is not None:
-        body["order"] = order_dict(order, customer.name, 0)
+    if orders:
+        encoded = [order_dict(order, customer.name, 0) for order in orders]
+        body["order"] = encoded[0]
+        if len(encoded) > 1:
+            body["orders"] = encoded
     return body
 
 

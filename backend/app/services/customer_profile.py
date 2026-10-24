@@ -23,18 +23,162 @@ REQUIRED = (
 )
 
 
+_COLUMN_ALIASES = (
+    ("最早可完工日期", "earliest_completion"),
+    ("最早可完工", "earliest_completion"),
+    ("在手数量", "on_hand"),
+    ("订单数量", "quantity"),
+    ("订单交期", "delivery_date"),
+    ("交货日期", "delivery_date"),
+    ("订单号", "order_no"),
+    ("含税单价", "price"),
+    ("物料", "product"),
+    ("商品", "product"),
+    ("产品", "product"),
+    ("品名", "product"),
+    ("规格", "spec"),
+    ("型号", "spec"),
+    ("件数", "quantity"),
+    ("数量", "quantity"),
+    ("交期", "delivery_date"),
+    ("在手", "on_hand"),
+    ("库存", "on_hand"),
+    ("单价", "price"),
+)
+
+
 def preview_customer_file(filename: str, data: bytes) -> dict:
-    if not data:
-        raise HTTPException(status_code=400, detail="文件是空的")
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=400, detail="文件超过 15MB")
-    try:
-        text, _table, _kind = parse_upload(filename or "upload.txt", data)
-    except ValueError as exc:
-        message = str(exc)
-        status = 502 if "接口" in message else 400
-        raise HTTPException(status_code=status, detail=message) from exc
-    return preview_customer_chat(text)
+    return preview_customer_files([(filename, data)])
+
+
+def preview_customer_files(items: list[tuple[str, bytes]], pasted: str = "") -> dict:
+    if not items and not (pasted or "").strip():
+        raise HTTPException(status_code=400, detail="先粘贴文本，或上传文件")
+    prose: list[str] = []
+    tables: list[dict] = []
+    if (pasted or "").strip():
+        prose.append(pasted.strip())
+    for filename, data in items:
+        if not data:
+            raise HTTPException(status_code=400, detail="文件是空的")
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=400, detail="文件超过 15MB")
+        try:
+            text, table, _kind = parse_upload(filename or "upload.txt", data)
+        except ValueError as exc:
+            message = str(exc)
+            status = 502 if "接口" in message else 400
+            raise HTTPException(status_code=status, detail=message) from exc
+        sheets = table.get("sheets") if isinstance(table, dict) else None
+        rows = table.get("rows") if isinstance(table, dict) else None
+        spreadsheet = (filename or "").lower().endswith((".csv", ".xlsx", ".xlsm"))
+        if sheets:
+            tables.extend(sheets)
+        elif rows:
+            tables.append(table)
+        if text.strip() and not spreadsheet:
+            prose.append(text.strip())
+    orders = _orders_from_tables(tables)
+    identity = preview_customer_chat("\n\n".join(prose)) if prose else _empty_profile()
+    if not orders:
+        return identity
+    first = orders[0]
+    merged = {
+        "name": identity.get("name") or "",
+        "contact": identity.get("contact") or "",
+        "note": identity.get("note") or "",
+        "order_no": first.get("order_no") or "",
+        "product": first.get("product") or "",
+        "quantity": first.get("quantity"),
+        "delivery_date": first.get("delivery_date") or "",
+        "on_hand": first.get("on_hand"),
+        "earliest_completion": first.get("earliest_completion") or "",
+        "orders": orders,
+    }
+    merged["missing"] = missing_labels(merged)
+    return merged
+
+
+def _empty_profile() -> dict:
+    profile = {
+        "name": "",
+        "contact": "",
+        "note": "",
+        "order_no": "",
+        "product": "",
+        "quantity": None,
+        "delivery_date": "",
+        "on_hand": None,
+        "earliest_completion": "",
+    }
+    return {**profile, "missing": missing_labels(profile)}
+
+
+def _orders_from_tables(tables: list[dict]) -> list[dict]:
+    orders = []
+    for table in tables:
+        orders.extend(_orders_from_table(table.get("columns") or [], table.get("rows") or []))
+    return orders
+
+
+def _orders_from_table(columns: list[str], rows: list[list[str]]) -> list[dict]:
+    fields = [_column_field(column) for column in columns]
+    if "product" not in fields and "quantity" not in fields:
+        return []
+    orders = []
+    for row in rows:
+        padded = list(row) + [""] * (len(fields) - len(row))
+        record = {"product": "", "spec": "", "quantity": "", "delivery_date": "", "order_no": "", "on_hand": "", "earliest_completion": ""}
+        for field, cell in zip(fields, padded):
+            if field and not record.get(field):
+                record[field] = str(cell or "").strip()
+        product = " ".join(part for part in (record["product"], record["spec"]) if part).strip()
+        quantity = _parse_qty(record["quantity"])
+        delivery = _parse_day(record["delivery_date"])
+        on_hand = _parse_qty(record["on_hand"], positive=False)
+        earliest = _parse_day(record["earliest_completion"])
+        if not product and quantity is None and not delivery:
+            continue
+        line = {
+            "order_no": record["order_no"],
+            "product": product,
+            "quantity": quantity,
+            "delivery_date": delivery,
+            "on_hand": on_hand,
+            "earliest_completion": earliest,
+        }
+        line["missing"] = [
+            label
+            for key, label in REQUIRED
+            if key != "name" and (line.get(key) is None or line.get(key) == "")
+        ]
+        orders.append(line)
+    return orders
+
+
+def _column_field(header: str) -> str:
+    compact = re.sub(r"\s+", "", header or "")
+    matches = [(len(alias), field) for alias, field in _COLUMN_ALIASES if alias in compact]
+    if not matches:
+        return ""
+    return max(matches)[1]
+
+
+def _parse_qty(value: str, positive: bool = True) -> int | None:
+    matched = re.search(r"\d+", value or "")
+    if matched is None:
+        return None
+    number = int(matched.group(0))
+    if positive and number <= 0:
+        return None
+    if number < 0:
+        return None
+    return number
+
+
+def _parse_day(value: str) -> str:
+    matched = re.search(r"\d{4}-\d{2}-\d{2}", value or "")
+    return matched.group(0) if matched else ""
 
 
 def preview_customer_chat(text: str) -> dict:
@@ -146,10 +290,12 @@ def _load_profile(raw: str) -> dict:
 
 def _speaker(text: str) -> tuple[str, str]:
     for line in text.splitlines():
-        matched = re.match(r"\[[^\]]+\]\s*(.+)", line.strip())
+        matched = re.match(r"\[([^\]]+)\]\s*(.+)", line.strip())
         if matched is None:
             continue
-        speaker = matched.group(1).strip()
+        if re.fullmatch(r"R\d+C\d+", matched.group(1)):
+            continue
+        speaker = matched.group(2).strip()
         if not speaker or speaker.startswith("销售"):
             continue
         bits = speaker.split()

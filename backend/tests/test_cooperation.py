@@ -143,6 +143,74 @@ def test_repeat_without_history_does_not_guess_a_spec(client):
     assert "order" not in created.json()
 
 
+def test_preview_order_sheet_keeps_every_row_and_can_join_a_chat(client):
+    folder = ROOT.parent / "B-订货表缺客户名"
+    sheet = folder / "订货表-仅采购明细.xlsx"
+    chat = folder / "补全客户身份-聊天记录.txt"
+    alone = client.post(
+        "/customers/preview/file",
+        files={"file": (sheet.name, sheet.read_bytes(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+    )
+    assert alone.status_code == 200, alone.text
+    body = alone.json()
+    assert body["name"] == ""
+    assert body["name"] != "物料"
+    assert len(body["orders"]) == 5
+    assert body["orders"][0]["product"] == "塑壳断路器 250A 3P"
+    assert body["orders"][0]["quantity"] == 40
+    assert body["orders"][0]["delivery_date"] == "2026-11-20"
+    assert body["orders"][4]["product"] == "电能表 单相"
+    assert body["orders"][4]["delivery_date"] == "2026-12-01"
+    joined = client.post(
+        "/customers/preview/file",
+        files=[
+            ("files", (sheet.name, sheet.read_bytes(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")),
+            ("files", (chat.name, chat.read_bytes(), "text/plain")),
+        ],
+    )
+    assert joined.status_code == 200, joined.text
+    merged = joined.json()
+    assert merged["name"] == "南浦配电"
+    assert merged["contact"] == "计划陈工"
+    assert "13800001002" in merged["note"]
+    assert len(merged["orders"]) == 5
+    assert "客户名称" not in merged["missing"]
+
+
+def test_create_customer_from_several_sheet_rows(client):
+    response = client.post(
+        "/customers",
+        json={
+            "name": "南浦配电",
+            "contact": "计划陈工",
+            "orders": [
+                {
+                    "order_no": "ORD-501",
+                    "product": "塑壳断路器 250A 3P",
+                    "quantity": 40,
+                    "delivery_date": "2026-11-20",
+                    "available_qty": 200,
+                    "earliest_completion": "2026-11-15",
+                },
+                {
+                    "order_no": "ORD-502",
+                    "product": "漏电断路器 63A 2P",
+                    "quantity": 24,
+                    "delivery_date": "2026-11-25",
+                    "available_qty": 200,
+                    "earliest_completion": "2026-11-04",
+                },
+            ],
+        },
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["customer"]["order_count"] == 2
+    assert [item["order_no"] for item in body["orders"]] == ["ORD-501", "ORD-502"]
+    listed = client.get("/orders").json()
+    assert {item["order_no"] for item in listed} >= {"ORD-501", "ORD-502"}
+
+
 def test_preview_file_uses_the_same_fields_as_pasted_text(client):
     path = ROOT.parent / "A-完整协作三阶段" / "01-询价接洽-聊天记录.txt"
     response = client.post(

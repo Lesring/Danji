@@ -60,6 +60,12 @@ class CustomerIn(BaseModel):
     contact: str = ""
     note: str = ""
     order: OrderFields | None = None
+    orders: list[OrderFields] | None = None
+
+
+class OrderBatchIn(BaseModel):
+    customer_id: int
+    orders: list[OrderFields]
 
 
 class OrderIn(OrderFields):

@@ -18,6 +18,7 @@ export const api = {
   createCustomer: (body: Record<string, unknown>) => http.post("/customers", body).then((response) => response.data),
   previewCustomer: (text: string) => http.post("/customers/preview", { text }).then((response) => response.data),
   previewCustomerFile: (form: FormData) => http.post("/customers/preview/file", form).then((response) => response.data),
+  createOrders: (body: Record<string, unknown>) => http.post("/orders/batch", body).then((response) => response.data),
   orders: (params?: { customer_id?: number; product?: string; trashed?: boolean }) =>
     http.get("/orders", { params }).then((response) => response.data),
   createOrder: (body: Record<string, unknown>) => http.post("/orders", body).then((response) => response.data),

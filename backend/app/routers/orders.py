@@ -6,7 +6,7 @@ from app.db import get_db
 from app.models import BusinessEvent, Customer, Order, Source, TaskSuggestion
 from app.present import audit_dict, event_dict, order_dict, supply_dict
 from app.services.import_summary import list_import_history
-from app.schemas import OrderIn, SupplyPatch
+from app.schemas import OrderBatchIn, OrderIn, SupplyPatch
 from app.services.apply import order_audit_entries, require_active_order
 from app.services.records import add_order_for_customer, move_order_to_trash, purge_order, restore_order
 from app.services.supply import recompute_product, supply_view, write_supply
@@ -33,6 +33,24 @@ def create_order(payload: OrderIn, db: Session = Depends(get_db)):
     customer, order = add_order_for_customer(db, payload)
     db.commit()
     return order_dict(order, customer.name, 0)
+
+
+@router.post("/orders/batch")
+def create_orders(payload: OrderBatchIn, db: Session = Depends(get_db)):
+    if not payload.orders:
+        raise HTTPException(status_code=400, detail="至少要有一张订单")
+    customer = db.get(Customer, payload.customer_id)
+    if customer is None:
+        raise HTTPException(status_code=404, detail="客户不存在")
+    created = []
+    for item in payload.orders:
+        _customer, order = add_order_for_customer(
+            db,
+            OrderIn(customer_id=payload.customer_id, **item.model_dump()),
+        )
+        created.append(order_dict(order, _customer.name, 0))
+    db.commit()
+    return {"orders": created}
 
 
 @router.get("/orders")

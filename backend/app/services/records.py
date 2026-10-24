@@ -27,12 +27,14 @@ from app.util import dumps, parse_date
 KEPT_TASK_STATUSES = {"已完成", "已关闭"}
 
 
-def add_customer(db: Session, payload: CustomerIn) -> tuple[Customer, Order | None]:
+def add_customer(db: Session, payload: CustomerIn) -> tuple[Customer, list[Order]]:
     customer = Customer(name=_customer_name(payload.name), contact=payload.contact.strip(), note=payload.note.strip())
     db.add(customer)
     db.flush()
-    order = add_order(db, payload.order, customer) if payload.order else None
-    return customer, order
+    payloads = list(payload.orders or [])
+    if payload.order is not None and not payloads:
+        payloads = [payload.order]
+    return customer, [add_order(db, item, customer) for item in payloads]
 
 
 def add_order_for_customer(db: Session, payload: OrderIn) -> tuple[Customer, Order]:

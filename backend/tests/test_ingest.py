@@ -1,5 +1,6 @@
 import io
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -65,6 +66,22 @@ def _xlsx_bytes() -> bytes:
     buffer = io.BytesIO()
     book.save(buffer)
     return buffer.getvalue()
+
+
+def test_xlsx_keeps_dates_and_skips_a_title_row():
+    book = Workbook()
+    sheet = book.active
+    sheet.append(["南浦配电订货表"])
+    sheet.append(["物料", "规格", "数量", "订单交期"])
+    sheet.append(["塑壳断路器", "250A 3P", 40.0, datetime(2026, 11, 20)])
+    buffer = io.BytesIO()
+    book.save(buffer)
+    text, table, kind = parse_upload("订货表.xlsx", buffer.getvalue())
+    assert kind == "table"
+    assert table["columns"][:4] == ["物料", "规格", "数量", "订单交期"]
+    assert table["rows"] == [["塑壳断路器", "250A 3P", "40", "2026-11-20"]]
+    assert "2026-11-20 00:00:00" not in text
+    assert "南浦配电订货表" in text
 
 
 def test_parser_routes_local_files():
