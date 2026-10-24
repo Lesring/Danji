@@ -3,7 +3,7 @@
 从聊天、表格和通话转写里识别订单变化，标出数量、交期和库存冲突，生成可确认的任务。模型只提出事件草案；写入订单和任务必须经过人工确认。
 
 **源码仓库**：<https://github.com/Lesring/Danji>  
-**公开访问且不暴露 API**：见 [DEPLOY.md](DEPLOY.md)（本地 fixture 演示、Docker、Render 公网演示）。
+**公网演示（不提交 API 密钥）**：用仓库内 `Dockerfile` / `render.yaml`，默认 `EXTRACT_MODE=fixture`。
 
 ## 你需要配置的内容
 
