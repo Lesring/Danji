@@ -1,5 +1,7 @@
 # Render Blueprint：一键部署公网演示（fixture，无需 API 密钥）
-# 在 Render Dashboard → New → Blueprint，连接 GitHub 仓库后导入本文件。
+# 仓库：https://github.com/Lesring/Danji
+# 已部署示例：https://danji.onrender.com/
+# Dashboard → New → Blueprint，连接 GitHub 后导入本文件。
 services:
   - type: web
     name: danji
