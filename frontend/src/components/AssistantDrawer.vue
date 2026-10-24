@@ -14,9 +14,19 @@ interface Card extends AssistantAction {
   applyToOrder: boolean;
 }
 
+interface Attachment {
+  filename: string;
+  source_type: string;
+  title: string;
+  text: string;
+  truncated?: boolean;
+  parsed_via?: "local" | "ocr" | "asr";
+}
+
 interface Turn {
   role: "user" | "assistant";
   content: string;
+  attachmentLabel?: string;
   notes: string[];
   cards: Card[];
 }
@@ -29,6 +39,11 @@ const draft = ref("");
 const busy = ref(false);
 const messages = ref<Turn[]>([]);
 const log = ref<HTMLElement | null>(null);
+const pendingAttachment = ref<Attachment | null>(null);
+const parsingFile = ref(false);
+
+const uploadAccept =
+  ".txt,.md,.csv,.json,.html,.pdf,.png,.jpg,.jpeg,.webp,.docx,.xlsx,.mp3,.wav,.m4a";
 
 const routeName = computed(() => {
   const name = route.name;
@@ -76,11 +91,53 @@ async function scrollDown() {
   if (log.value) log.value.scrollTop = log.value.scrollHeight;
 }
 
+function clearAttachment() {
+  pendingAttachment.value = null;
+}
+
+function parseViaLabel(via?: Attachment["parsed_via"]) {
+  if (via === "ocr") return "火山方舟 OCR（OCR_API_BASE）";
+  if (via === "asr") return "火山方舟 ASR（ASR_API_BASE）";
+  return "本地解析";
+}
+
+async function onUploadChange(uploadFile: { raw?: File }) {
+  const file = uploadFile.raw;
+  if (!file) return;
+  parsingFile.value = true;
+  try {
+    const form = new FormData();
+    form.append("file", file);
+    const body = (await api.assistantParseFile(form)) as Attachment;
+    pendingAttachment.value = body;
+    const via = parseViaLabel(body.parsed_via);
+    ElMessage.success(
+      body.truncated ? `已解析（${via}，正文较长）` : `已解析：${via}。发送后可在对话里录入订单。`,
+    );
+  } catch (error) {
+    ElMessage.error(errorMessage(error));
+    clearAttachment();
+  } finally {
+    parsingFile.value = false;
+  }
+}
+
 async function send() {
   const content = draft.value.trim();
-  if (!content || busy.value) return;
+  const attachment = pendingAttachment.value;
+  if ((!content && !attachment) || busy.value || parsingFile.value) return;
   draft.value = "";
-  messages.value.push({ role: "user", content, notes: [], cards: [] });
+  const attachmentLabel = attachment ? `📎 ${attachment.filename}` : undefined;
+  const display =
+    content || (attachment ? `请处理附件「${attachment.filename}」` : "");
+  messages.value.push({
+    role: "user",
+    content: attachmentLabel && content ? `${attachmentLabel}\n${display}` : display,
+    attachmentLabel,
+    notes: [],
+    cards: [],
+  });
+  clearAttachment();
   busy.value = true;
   await scrollDown();
   try {
@@ -90,6 +147,14 @@ async function send() {
       order_id: orderId.value,
       product: product.value,
       messages: history,
+      attachment: attachment
+        ? {
+            filename: attachment.filename,
+            source_type: attachment.source_type,
+            title: attachment.title,
+            text: attachment.text,
+          }
+        : null,
     })) as { reply: string; actions: AssistantAction[] };
     const actions = Array.isArray(body.actions) ? body.actions : [];
     messages.value.push({
@@ -181,7 +246,7 @@ function actionLabel(card: Card) {
     <div class="assistant">
       <div class="assistant-log" ref="log">
         <p v-if="!messages.length" class="muted">
-          可以在任意页面操作订单、任务和仓库。改库存、删商品、写入数量和交期前，仍需要在卡片上点一次。
+          可以在任意页面操作订单、任务和仓库；支持上传聊天、表格、PDF、图片或录音（与订单详情相同格式）。改库存、删商品、写入数量和交期前，仍需要在卡片上点一次。
         </p>
         <article v-for="(message, index) in messages" :key="index" :class="message.role">
           <p class="assistant-text">{{ message.content }}</p>
@@ -207,15 +272,44 @@ function actionLabel(card: Card) {
           </div>
         </article>
       </div>
-      <form class="assistant-form" @submit.prevent="send">
-        <el-input
-          v-model="draft"
-          type="textarea"
-          :rows="2"
-          placeholder="例如：打开工作台"
-          @keydown.enter.exact.prevent="send"
-        />
-        <el-button type="primary" native-type="submit" :loading="busy" :disabled="!draft.trim()">发送</el-button>
+      <form class="assistant-compose" @submit.prevent="send">
+        <div class="assistant-upload-row">
+          <el-upload
+            :auto-upload="false"
+            :show-file-list="false"
+            :limit="1"
+            :accept="uploadAccept"
+            :disabled="busy || parsingFile"
+            :on-change="onUploadChange"
+          >
+            <el-button :loading="parsingFile" :disabled="busy">上传文件</el-button>
+          </el-upload>
+          <span class="muted assistant-upload-hint">聊天/表格/PDF/图片/录音 · 图片与扫描 PDF 走 OCR_API_BASE</span>
+        </div>
+        <div v-if="pendingAttachment" class="assistant-attachment">
+          <div class="assistant-attachment-meta">
+            <span class="assistant-attachment-name">📎 {{ pendingAttachment.filename }}</span>
+            <span class="muted">{{ parseViaLabel(pendingAttachment.parsed_via) }}</span>
+          </div>
+          <button type="button" class="text-button" @click="clearAttachment">移除</button>
+        </div>
+        <div class="assistant-form">
+          <el-input
+            v-model="draft"
+            type="textarea"
+            :rows="2"
+            placeholder="例如：把附件录入 ORD-018 并解析"
+            @keydown.enter.exact.prevent="send"
+          />
+          <el-button
+            type="primary"
+            native-type="submit"
+            :loading="busy"
+            :disabled="(!draft.trim() && !pendingAttachment) || parsingFile"
+          >
+            发送
+          </el-button>
+        </div>
       </form>
     </div>
   </el-drawer>

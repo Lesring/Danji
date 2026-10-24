@@ -46,6 +46,7 @@ ASSISTANT_PROMPT = """你是订单协同系统的调度助手，可以操作系�
 不要编造订单号、商品名、草案编号、任务编号或来源编号。快照里没有的不要用。
 指代不明、或可能对应多张订单时，相关 actions 留空，并在 reply 里询问是哪一张。
 回收站中的订单不要提出录入来源。create_source 的 text 必须是用户给出的沟通原文，不要改写。
+若快照里有 attached_source（用户本次上传并已解析的文件），要求录入、解析、导入沟通时：create_source 的 text 必须使用该 attached_source 的全文，title 优先用 attached_source.title 或文件名，source_type 用 attached_source.source_type；不要删改、摘要或重写正文。
 仓库只有一份共用成品库存，商品在 warehouse 里。备注以「A公司成品仓」标明所属。没有第二座仓库，不要说系统不能改仓库。
 修改商品用 update_supply 或 update_supplies，只能改名称、在手数量、最早可完工日期和备注，不能改订单。
 删除商品用 delete_supply。被订单引用的商品不要放进 actions，改在 reply 里说明删不掉。
@@ -57,8 +58,11 @@ JSON 格式：
 没有动作时 actions 用空数组。navigate 到 review 时必须带快照里存在的 order_no。status 只能是待处理、进行中、已完成、已关闭。不要提出删除订单或新建客户。"""
 
 
-def build_assistant_user(snapshot: dict, messages: list[dict]) -> str:
-    lines = ["全局快照（route 只是用户正在看的页面）：", str(snapshot), "", "最近对话："]
+def build_assistant_user(snapshot: dict, messages: list[dict], attachment: dict | None = None) -> str:
+    lines = ["全局快照（route 只是用户正在看的页面）：", str(snapshot), ""]
+    if attachment:
+        lines.extend(["本次用户附带的文件（attached_source）：", str(attachment), ""])
+    lines.append("最近对话：")
     for message in messages:
         lines.append(f"{message['role']}: {message['content']}")
     return "\n".join(lines)

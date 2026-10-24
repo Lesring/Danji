@@ -1,6 +1,7 @@
 import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,7 +11,7 @@ from app.llm.client import ExtractError, complete_text
 from app.llm.prompts import ASSISTANT_PROMPT, build_assistant_user
 from app.models import BusinessEvent, Customer, Order, ProductSupply, Source, Task, TaskSuggestion
 from app.services.supply import referencing_orders
-from app.schemas import AssistantTurnIn
+from app.schemas import AssistantAttachment, AssistantTurnIn
 from app.services.apply import TASK_STATUSES
 from app.services.ingest import SOURCE_TYPES
 from app.util import parse_date
@@ -39,27 +40,40 @@ class Outcome:
     note: str | None = None
 
 
+ATTACHMENT_TEXT_LIMIT = 50000
+ATTACHMENT_PROMPT_LIMIT = 12000
+
+
 def assistant_turn(db: Session, payload: AssistantTurnIn) -> dict:
     messages = _recent_messages(payload)
-    if not messages or not any(item["role"] == "user" for item in messages):
+    attachment = _normalize_attachment(payload.attachment)
+    has_user = any(item["role"] == "user" for item in messages)
+    if (not messages or not has_user) and attachment is None:
         return {"reply": "先说要查看或处理哪张订单、哪段沟通。", "actions": []}
     if not get_settings().llm_api_key:
         return {"reply": NO_KEY_REPLY, "actions": []}
-    snapshot = build_snapshot(db, payload)
-    raw = complete_text(ASSISTANT_PROMPT, build_assistant_user(snapshot, messages))
+    snapshot = build_snapshot(db, payload, attachment)
+    raw = complete_text(
+        ASSISTANT_PROMPT,
+        build_assistant_user(snapshot, messages, _attachment_for_prompt(attachment)),
+    )
     data = _load_object(raw)
     _merge_warehouse_intent(db, messages, data)
-    return validate_actions(db, data, payload.order_id)
+    return validate_actions(db, data, payload.order_id, attachment)
 
 
-def build_snapshot(db: Session, payload: AssistantTurnIn) -> dict:
+def build_snapshot(
+    db: Session,
+    payload: AssistantTurnIn,
+    attachment: AssistantAttachment | None = None,
+) -> dict:
     rows = _order_rows(db)
     current = None
     if payload.order_id:
         match = next(((order, name) for order, name in rows if order.id == payload.order_id), None)
         if match is not None:
             current = _current_order(db, match[0], match[1])
-    return {
+    body = {
         "route": payload.route,
         "product": (payload.product or "").strip(),
         "orders": [
@@ -78,9 +92,21 @@ def build_snapshot(db: Session, payload: AssistantTurnIn) -> dict:
         "warehouse": _warehouse_rows(db),
         "current_order": current,
     }
+    if attachment is not None:
+        body["attached_source"] = {
+            "filename": attachment.filename,
+            "source_type": attachment.source_type,
+            "title": attachment.title,
+        }
+    return body
 
 
-def validate_actions(db: Session, data: dict, current_order_id: int | None) -> dict:
+def validate_actions(
+    db: Session,
+    data: dict,
+    current_order_id: int | None,
+    attachment: AssistantAttachment | None = None,
+) -> dict:
     reply = data.get("reply")
     reply = reply.strip() if isinstance(reply, str) and reply.strip() else "我没有整理出可以执行的动作。"
     incoming = data.get("actions")
@@ -92,7 +118,7 @@ def validate_actions(db: Session, data: dict, current_order_id: int | None) -> d
     for item in incoming[:24]:
         if not isinstance(item, dict):
             continue
-        outcome = _one(db, rows, item, current_order_id)
+        outcome = _one(db, rows, item, current_order_id, attachment)
         if outcome.action is not None:
             kept.append(outcome.action)
         if outcome.note and outcome.note not in notes:
@@ -133,6 +159,71 @@ def _recent_messages(payload: AssistantTurnIn) -> list[dict]:
             continue
         rows.append({"role": message.role, "content": content[:8000]})
     return rows
+
+
+def parse_assistant_file(filename: str, data: bytes) -> dict:
+    from app.services.ingest import AUDIO_TYPES, IMAGE_TYPES, parse_upload
+
+    if len(data) > 20 * 1024 * 1024:
+        raise ValueError("文件过大，请控制在 20MB 以内。")
+    name = (filename or "upload").strip()
+    ext = Path(name).suffix.lower()
+    text, _table, kind = parse_upload(name or "upload", data)
+    source_type = kind or "document"
+    if source_type not in SOURCE_TYPES:
+        source_type = "document"
+    if ext in IMAGE_TYPES or ext == ".pdf":
+        parsed_via = "ocr"
+    elif ext in AUDIO_TYPES:
+        parsed_via = "asr"
+    else:
+        parsed_via = "local"
+    title = Path(name).stem[:200] if name else "上传文件"
+    truncated = len(text) > ATTACHMENT_TEXT_LIMIT
+    if truncated:
+        text = text[:ATTACHMENT_TEXT_LIMIT]
+    return {
+        "filename": name[:255],
+        "source_type": source_type,
+        "title": title,
+        "text": text,
+        "truncated": truncated,
+        "parsed_via": parsed_via,
+    }
+
+
+def _normalize_attachment(raw: AssistantAttachment | None) -> AssistantAttachment | None:
+    if raw is None:
+        return None
+    text = (raw.text or "").strip()
+    if not text:
+        return None
+    source_type = (raw.source_type or "document").strip()
+    if source_type not in SOURCE_TYPES:
+        source_type = "document"
+    return AssistantAttachment(
+        filename=(raw.filename or "")[:255],
+        source_type=source_type,
+        title=(raw.title or "")[:200],
+        text=text[:ATTACHMENT_TEXT_LIMIT],
+    )
+
+
+def _attachment_for_prompt(attachment: AssistantAttachment | None) -> dict | None:
+    if attachment is None:
+        return None
+    text = attachment.text
+    truncated = len(text) > ATTACHMENT_PROMPT_LIMIT
+    if truncated:
+        text = text[:ATTACHMENT_PROMPT_LIMIT]
+    return {
+        "filename": attachment.filename,
+        "source_type": attachment.source_type,
+        "title": attachment.title,
+        "text": text,
+        "text_truncated_for_model": truncated,
+        "note": "录入 create_source 时使用完整 attached 文本（服务端保留），不要改写。",
+    }
 
 
 def _order_rows(db: Session) -> list[tuple[Order, str]]:
@@ -192,14 +283,20 @@ def _current_order(db: Session, order: Order, customer_name: str) -> dict:
     }
 
 
-def _one(db: Session, rows: list[tuple[Order, str]], item: dict, current_order_id: int | None) -> Outcome:
+def _one(
+    db: Session,
+    rows: list[tuple[Order, str]],
+    item: dict,
+    current_order_id: int | None,
+    attachment: AssistantAttachment | None = None,
+) -> Outcome:
     kind = str(item.get("type") or "").strip()
     if kind == "navigate":
         return _navigate(rows, item, current_order_id)
     if kind == "open_evidence":
         return _open_evidence(db, item)
     if kind == "create_source":
-        return _create_source(rows, item, current_order_id)
+        return _create_source(rows, item, current_order_id, attachment)
     if kind == "confirm_draft":
         return _confirm(db, rows, item)
     if kind == "reject_draft":
@@ -264,8 +361,15 @@ def _open_evidence(db: Session, item: dict) -> Outcome:
     )
 
 
-def _create_source(rows: list[tuple[Order, str]], item: dict, current_order_id: int | None) -> Outcome:
+def _create_source(
+    rows: list[tuple[Order, str]],
+    item: dict,
+    current_order_id: int | None,
+    attachment: AssistantAttachment | None = None,
+) -> Outcome:
     text = str(item.get("text") or "").strip()
+    if attachment and attachment.text.strip():
+        text = attachment.text.strip()
     if not text:
         return Outcome(note="录入来源需要有沟通原文。")
     token = _token(item.get("order_no"))
@@ -278,9 +382,14 @@ def _create_source(rows: list[tuple[Order, str]], item: dict, current_order_id: 
     if order.deleted_at:
         return Outcome(note=f"{order.order_no} 在回收站中，恢复后才能录入。")
     source_type = str(item.get("source_type") or "chat").strip() or "chat"
+    if attachment and attachment.source_type in SOURCE_TYPES:
+        source_type = attachment.source_type
     if source_type not in SOURCE_TYPES:
         return Outcome(note="来源类型不支持。")
-    title = str(item.get("title") or "").strip() or "对话录入"
+    title = str(item.get("title") or "").strip()
+    if not title and attachment:
+        title = (attachment.title or Path(attachment.filename).stem or "").strip()
+    title = title or "对话录入"
     return Outcome(
         {
             "type": "create_source",

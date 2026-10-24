@@ -149,8 +149,22 @@ def parse_pdf(data: bytes) -> tuple[str, dict, str]:
     text = "\n\n".join(pages).strip()
     if text:
         return text, {}, "document"
+    settings = get_settings()
+    if settings.ocr_api_key:
+        try:
+            from app.services.media import read_file
+
+            ark_text = read_file(
+                data,
+                "document.pdf",
+                "提取文档中的全部文字，保留换行和表格结构。不要解释。",
+            )
+            if str(ark_text).strip():
+                return str(ark_text).strip(), {}, "document"
+        except ValueError:
+            pass
     images = _pdf_images(reader)
-    if images and get_settings().ocr_api_key:
+    if images and settings.ocr_api_key:
         parts = [ocr_image(blob, mime) for blob, mime in images]
         return "\n\n".join(part for part in parts if part.strip()), {}, "document"
     if not get_settings().ocr_api_key:

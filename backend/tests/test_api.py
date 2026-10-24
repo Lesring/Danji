@@ -1040,6 +1040,60 @@ def test_assistant_drops_writes_when_order_matches_many(client, monkeypatch):
     assert "ORD-019" in turned.json()["reply"]
 
 
+def test_assistant_parse_file_txt(client):
+    response = client.post(
+        "/assistant/parse-file",
+        files={"file": ("wechat-chat.txt", "客户聊天\n加 100 件".encode(), "text/plain")},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert "加 100 件" in body["text"]
+    assert body["source_type"] == "chat"
+
+
+def test_assistant_turn_attachment_text_on_create_source(client, monkeypatch):
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+    captured: dict[str, str] = {}
+
+    def fake(_system, user):
+        captured["user"] = user
+        return json.dumps(
+            {
+                "reply": "好",
+                "actions": [
+                    {
+                        "type": "create_source",
+                        "order_no": "ORD-018",
+                        "source_type": "chat",
+                        "title": "摘要",
+                        "text": "模型写的摘要",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+
+    monkeypatch.setattr("app.services.assistant.complete_text", fake)
+    file_text = "客户聊天 · 10:05\n增加到 150 件"
+    turned = client.post(
+        "/assistant/turn",
+        json={
+            "route": "workbench",
+            "messages": [{"role": "user", "content": "录入附件"}],
+            "attachment": {
+                "filename": "chat.txt",
+                "source_type": "chat",
+                "title": "chat",
+                "text": file_text,
+            },
+        },
+    )
+    assert turned.status_code == 200, turned.text
+    assert "attached_source" in captured["user"]
+    action = next(item for item in turned.json()["actions"] if item["type"] == "create_source")
+    assert action["text"] == file_text
+
+
 def test_task_cannot_start_without_owner(client):
     _order_row, response = _post_sample(client, "ord018-owner")
     suggestion = next(item for item in response.json()["task_suggestions"] if item["owner"] == "")

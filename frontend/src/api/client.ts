@@ -53,10 +53,18 @@ export const api = {
   patchTask: (id: number, body: Record<string, unknown>) =>
     http.patch(`/tasks/${id}`, body).then((response) => response.data),
   evidence: (id: number) => http.get(`/evidence/${id}`).then((response) => response.data),
+  assistantParseFile: (form: FormData) =>
+    http.post("/assistant/parse-file", form).then((response) => response.data),
   assistantTurn: (body: {
     route: string;
     order_id?: number | null;
     product?: string | null;
     messages: { role: "user" | "assistant"; content: string }[];
+    attachment?: {
+      filename: string;
+      source_type: string;
+      title: string;
+      text: string;
+    } | null;
   }) => http.post("/assistant/turn", body).then((response) => response.data),
 };

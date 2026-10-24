@@ -94,8 +94,16 @@ class AssistantMessage(BaseModel):
     content: str = ""
 
 
+class AssistantAttachment(BaseModel):
+    filename: str = ""
+    source_type: Literal["chat", "table", "call_transcript", "note", "document"] = "document"
+    title: str = ""
+    text: str = ""
+
+
 class AssistantTurnIn(BaseModel):
     route: Literal["workbench", "review", "tasks", "warehouse"] = "workbench"
     order_id: int | None = None
     product: str | None = None
     messages: list[AssistantMessage] = Field(default_factory=list)
+    attachment: AssistantAttachment | None = None

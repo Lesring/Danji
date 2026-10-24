@@ -40,10 +40,14 @@ def get_settings() -> Settings:
         llm_api_base=os.getenv("LLM_API_BASE", "https://api.openai.com/v1").strip(),
         llm_api_key=os.getenv("LLM_API_KEY", "").strip(),
         llm_model=os.getenv("LLM_MODEL", "gpt-4o-mini").strip(),
-        ocr_api_base=os.getenv("OCR_API_BASE", "").strip(),
+        ocr_api_base=(
+            os.getenv("OCR_API_BASE", "").strip() or "https://ark.cn-beijing.volces.com/api/v3"
+        ),
         ocr_api_key=os.getenv("OCR_API_KEY", "").strip(),
-        ocr_model=os.getenv("OCR_MODEL", "").strip(),
-        asr_api_base=os.getenv("ASR_API_BASE", "").strip(),
+        ocr_model=os.getenv("OCR_MODEL", "").strip() or "doubao-seed-2-0-mini-260428",
+        asr_api_base=(
+            os.getenv("ASR_API_BASE", "").strip() or "https://ark.cn-beijing.volces.com/api/v3"
+        ),
         asr_api_key=os.getenv("ASR_API_KEY", "").strip(),
         asr_model=os.getenv("ASR_MODEL", "").strip(),
         fallback_api_base=(

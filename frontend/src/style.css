@@ -466,6 +466,53 @@ a { color: inherit; }
   white-space: pre-wrap;
 }
 
+.assistant-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+}
+
+.assistant-upload-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.assistant-upload-hint {
+  font-size: 12px;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 140px;
+}
+
+.assistant-attachment {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: #faf6f0;
+  font-size: 13px;
+}
+
+.assistant-attachment-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.assistant-attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
 .assistant-form {
   display: flex;
   gap: 8px;
