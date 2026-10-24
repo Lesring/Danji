@@ -1,0 +1,13 @@
+# Render Blueprint：一键部署公网演示（fixture，无需 API 密钥）
+# 在 Render Dashboard → New → Blueprint，连接 GitHub 仓库后导入本文件。
+services:
+  - type: web
+    name: danji
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: EXTRACT_MODE
+        value: fixture
+      - key: PYTHONUNBUFFERED
+        value: "1"

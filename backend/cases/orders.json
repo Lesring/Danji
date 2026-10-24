@@ -1,0 +1,44 @@
+[
+  {
+    "order_no": "ORD-301",
+    "customer_name": "青岚电子",
+    "contact": "采购 小周",
+    "note": "普通短沟通，聊天文件交付结案",
+    "product": "贴片电阻 0603",
+    "quantity": 50,
+    "delivery_date": "2026-11-12",
+    "status": "已确认",
+    "owner": "林晓",
+    "available_qty": 200,
+    "earliest_completion": "2026-11-05",
+    "supply_note": "库存 200 件，最早可完工日期 2026-11-05，可按原订单交货。"
+  },
+  {
+    "order_no": "ORD-302",
+    "customer_name": "北港仪器",
+    "contact": "计划 陈工",
+    "note": "同一订单反复改数量和交期",
+    "product": "传感器支架",
+    "quantity": 200,
+    "delivery_date": "2026-11-25",
+    "status": "已确认",
+    "owner": "林晓",
+    "available_qty": 260,
+    "earliest_completion": "2026-11-18",
+    "supply_note": "库存 260 件，最早可完工日期 2026-11-18。240 件仍在库存内。"
+  },
+  {
+    "order_no": "ORD-303",
+    "customer_name": "津门阀门",
+    "contact": "计划部 王主任",
+    "note": "原订单确认后，电话突然改数量和交期",
+    "product": "密封圈",
+    "quantity": 60,
+    "delivery_date": "2026-11-18",
+    "status": "已确认",
+    "owner": "林晓",
+    "available_qty": 150,
+    "earliest_completion": "2026-11-10",
+    "supply_note": "库存 150 件，最早可完工日期 2026-11-10。电话里改到 95 件、11 月 12 日仍在约束内。"
+  }
+]

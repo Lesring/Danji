@@ -1,0 +1,212 @@
+{
+  "customers": [
+    {
+      "name": "青禾成套",
+      "contact": "采购 周宁",
+      "note": "成套厂。电话 13800001001"
+    },
+    {
+      "name": "南浦配电",
+      "contact": "计划 陈工",
+      "note": "区域经销商。电话 13800001002"
+    },
+    {
+      "name": "江北盘厂",
+      "contact": "采购 赵敏",
+      "note": "成套厂。电话 13800001003"
+    },
+    {
+      "name": "临海盘厂",
+      "contact": "计划 孙磊",
+      "note": "成套厂。电话 13800001004"
+    },
+    {
+      "name": "澄江仪表",
+      "contact": "采购 小周",
+      "note": "配套厂。电话 13800001005"
+    },
+    {
+      "name": "滨海安装",
+      "contact": "项目 吴工",
+      "note": "安装公司。电话 13800001006。产线暂停后这单待确认取消"
+    }
+  ],
+  "orders": [
+    {
+      "order_no": "ORD-018",
+      "customer_name": "青禾成套",
+      "product": "小型断路器",
+      "quantity": 100,
+      "delivery_date": "2026-11-10",
+      "status": "已确认",
+      "owner": "订单负责人",
+      "available_qty": 120,
+      "earliest_completion": "2026-11-08",
+      "supply_note": "A公司成品仓。公开样本小型断路器 NXB-63。本仓在手 120 件；若增加数量，最早可完工日期 2026-11-08。"
+    },
+    {
+      "order_no": "ORD-019",
+      "customer_name": "南浦配电",
+      "product": "塑壳断路器",
+      "quantity": 80,
+      "delivery_date": "2026-11-20",
+      "status": "已确认",
+      "owner": "订单负责人",
+      "available_qty": 200,
+      "earliest_completion": "2026-11-15",
+      "supply_note": "A公司成品仓。公开样本塑壳断路器 NM1。本仓在手 200 件，最早可完工日期 2026-11-15。库存内改数量仍可交。"
+    },
+    {
+      "order_no": "ORD-020",
+      "customer_name": "江北盘厂",
+      "product": "框架断路器",
+      "quantity": 8,
+      "delivery_date": "2026-11-28",
+      "status": "已确认",
+      "owner": "订单负责人",
+      "available_qty": 3,
+      "earliest_completion": "2026-11-18",
+      "supply_note": "A公司成品仓。配电电器里的框架断路器，单台体积大，本仓在手只有 3 台。订单 8 台，超出在手。最早可完工日期 2026-11-18，订单交期 2026-11-28 晚于该日。"
+    },
+    {
+      "order_no": "ORD-021",
+      "customer_name": "临海盘厂",
+      "product": "漏电断路器",
+      "quantity": 48,
+      "delivery_date": "2026-10-27",
+      "status": "已确认",
+      "owner": "订单负责人",
+      "available_qty": 200,
+      "earliest_completion": "2026-11-04",
+      "supply_note": "A公司成品仓。公开样本漏电断路器 NXBLE。在手 200 只，数量够。订单交期 2026-10-27 早于最早可完工日期 2026-11-04。"
+    },
+    {
+      "order_no": "ORD-022",
+      "customer_name": "澄江仪表",
+      "product": "交流电流表",
+      "quantity": 30,
+      "delivery_date": "2026-11-12",
+      "status": "已确认",
+      "owner": "订单负责人",
+      "available_qty": 80,
+      "earliest_completion": "2026-11-02",
+      "supply_note": "A公司成品仓。仪器仪表里的交流电流表。在手 80 只，订单 30 只，订单交期 2026-11-12 晚于最早可完工日期 2026-11-02。"
+    },
+    {
+      "order_no": "ORD-023",
+      "customer_name": "滨海安装",
+      "product": "电能表",
+      "quantity": 16,
+      "delivery_date": "2026-11-20",
+      "status": "待确认取消",
+      "owner": "订单负责人",
+      "available_qty": 40,
+      "earliest_completion": "2026-11-08",
+      "supply_note": "A公司成品仓。仪器仪表里的电能表。客户项目暂停，订单待确认取消，不再占用在手。"
+    }
+  ],
+  "products": [
+    {
+      "product": "交流接触器",
+      "on_hand": 80,
+      "earliest_completion": "2026-11-12",
+      "note": "A公司成品仓。控制电器，公开样本交流接触器 CJX2。本仓在手 80 件；最早可完工日期 2026-11-12。"
+    },
+    {
+      "product": "热继电器",
+      "on_hand": 36,
+      "earliest_completion": "2026-11-12",
+      "note": "A公司成品仓。与交流接触器配套的热继电器。本仓在手 36 件；最早可完工日期 2026-11-12。"
+    }
+  ],
+  "samples": [
+    {
+      "id": "ord018-conflict",
+      "order_no": "ORD-018",
+      "title": "交期与数量冲突",
+      "type": "chat",
+      "business_time": "2026-10-21T10:20:00",
+      "text": "客户聊天 · 10:05\n这批小型断路器能不能增加到 150 件？最好 11 月 6 日前发出来。\n\n库存表 · 10:12\n当前库存 120 件，尚未完成的生产计划需要重新核对。\n\n销售沟通 · 10:20\n我先跟客户说了，150 件，11 月 6 日发货。"
+    },
+    {
+      "id": "ord019-qty",
+      "order_no": "ORD-019",
+      "title": "库存内改数量",
+      "type": "chat",
+      "business_time": "2026-10-21T09:40:00",
+      "text": "客户消息 · 09:40\n这批塑壳断路器能不能增加到 100 件？交期按原计划就行。"
+    },
+    {
+      "id": "ord018-cancel",
+      "order_no": "ORD-018",
+      "title": "客户临时取消",
+      "type": "chat",
+      "business_time": "2026-10-21T15:10:00",
+      "text": "客户消息 · 15:10\n青禾成套这批小型断路器先取消吧，暂时不需要了。"
+    },
+    {
+      "id": "ord018-contradiction",
+      "order_no": "ORD-018",
+      "title": "前后交期矛盾",
+      "type": "chat",
+      "business_time": "2026-10-21T10:30:00",
+      "text": "客户聊天 · 10:05\n这批货最好 11 月 6 日前发出来。\n\n客户聊天 · 10:30\n刚才说错了，还是按原交期 11 月 10 日发货。"
+    },
+    {
+      "id": "ord018-owner",
+      "order_no": "ORD-018",
+      "title": "责任人不清",
+      "type": "note",
+      "business_time": "2026-10-21T11:00:00",
+      "text": "内部备注 · 11:00\n包装方式还要再确认一下，具体谁跟进还没定。"
+    },
+    {
+      "id": "ord018-followup",
+      "order_no": "ORD-018",
+      "title": "关联已有任务",
+      "type": "chat",
+      "business_time": "2026-10-21T16:00:00",
+      "text": "销售补充 · 16:00\n客户还在考虑是否接受分批交付，我明天再确认。"
+    },
+    {
+      "id": "ord018-stock",
+      "order_no": "ORD-018",
+      "title": "库存下降",
+      "type": "note",
+      "business_time": "2026-10-21T17:00:00",
+      "text": "仓库盘点 · 17:00\n库存只剩 90 件。"
+    },
+    {
+      "id": "ord018-production",
+      "order_no": "ORD-018",
+      "title": "生产推迟",
+      "type": "note",
+      "business_time": "2026-10-21T17:20:00",
+      "text": "生产反馈 · 17:20\n这批最早 11 月 12 日才能完成。"
+    },
+    {
+      "id": "ord018-more-products",
+      "order_no": "ORD-018",
+      "title": "其他商品和部分交付",
+      "type": "chat",
+      "business_time": "2026-10-22T10:40:00",
+      "text": "客户聊天 · 10:40\n小型断路器这批已经交付了一半。\n另外再买交流接触器 40 件，11 月 20 日要货；热继电器 25 件，11 月 25 日要货。"
+    },
+    {
+      "id": "ord018-meeting",
+      "order_no": "ORD-018",
+      "title": "线下当面洽谈",
+      "type": "chat",
+      "business_time": "2026-10-24T10:12:00",
+      "text": "[2026-10-24 10:05] 青禾成套 B老板\n林晓，ORD-018 这批小型断路器还是 100 件，订单交期 2026-11-10，先不动。\n\n[2026-10-24 10:06] 青禾成套 B老板\n星期二 2026-11-03 上午 9 点，我派人到厂里当面谈。来的人是采购周宁，地点在 A公司厂区会议室，谈的是明年框架断路器备货。\n\n[2026-10-24 10:12] 销售 林晓\n数量和订单交期不改。销售林晓接待。"
+    },
+    {
+      "id": "ord018-repeat",
+      "order_no": "ORD-018",
+      "title": "沿用上次规格",
+      "type": "chat",
+      "business_time": "2026-10-24T15:20:00",
+      "text": "[2026-10-24 15:20] 青禾成套 采购周宁\n林晓，像上次一样的规格再来 40 件，要求交期 2026-12-02。电话 13800001001。\n\n[2026-10-24 15:26] 销售 林晓\n我按你之前那笔对规格，对上之前再问你确认。这会儿不新建订单。"
+    }
+  ]
+}
