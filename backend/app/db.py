@@ -130,9 +130,12 @@ def get_engine():
     engine = create_engine(url, connect_args={"check_same_thread": False})
 
     @event.listens_for(engine, "connect")
-    def _enable_fk(dbapi_conn, _record):
+    def _sqlite_pragmas(dbapi_conn, _record):
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
+        if url.startswith("sqlite"):
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA busy_timeout=30000")
         cursor.close()
 
     _engine = engine

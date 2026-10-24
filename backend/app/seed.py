@@ -208,9 +208,21 @@ def _apply_demo_seed(db: Session) -> None:
     db.flush()
     ensure_catalog_supplies(db)
     _seed_demo_tasks(db, demo)
-    _seed_scenarios(db, demo)
-    _seed_intakes(db, demo, customers)
+    _with_fixture_extract(lambda: _seed_scenarios(db, demo))
+    _with_fixture_extract(lambda: _seed_intakes(db, demo, customers))
     db.flush()
+
+
+def _with_fixture_extract(fn):
+    previous = os.environ.get("EXTRACT_MODE")
+    os.environ["EXTRACT_MODE"] = "fixture"
+    try:
+        fn()
+    finally:
+        if previous is None:
+            os.environ.pop("EXTRACT_MODE", None)
+        else:
+            os.environ["EXTRACT_MODE"] = previous
 
 
 def _seed_demo_tasks(db: Session, demo: dict) -> None:
@@ -226,6 +238,20 @@ def _seed_demo_tasks(db: Session, demo: dict) -> None:
         order = orders.get(order_no)
         if order is None or order.deleted_at:
             continue
+        evidence = (item.get("evidence_text") or "").strip()
+        source_id = None
+        if evidence:
+            source = Source(
+                order_id=order.id,
+                type=(item.get("evidence_type") or "chat")[:32],
+                title=(item.get("evidence_title") or "沟通记录")[:200],
+                raw_text=evidence,
+                business_time=item.get("evidence_time"),
+                created_at=item.get("evidence_time") or stamp,
+            )
+            db.add(source)
+            db.flush()
+            source_id = source.id
         db.add(
             Task(
                 order_id=order.id,
@@ -236,6 +262,7 @@ def _seed_demo_tasks(db: Session, demo: dict) -> None:
                 due_date=(item.get("due_date") or None),
                 status=(item.get("status") or "待处理")[:20],
                 reason=(item.get("reason") or "")[:2000],
+                source_id=source_id,
                 created_at=stamp,
                 updated_at=stamp,
             )
