@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DANJI_DATABASE", str(tmp_path / "test.db"))
+    monkeypatch.setenv("DANJI_FIXTURE", "demo_minimal.json")
     monkeypatch.setenv("EXTRACT_MODE", "fixture")
     monkeypatch.setenv("LLM_API_KEY", "")
     monkeypatch.setenv("OCR_API_KEY", "")

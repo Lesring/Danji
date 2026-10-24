@@ -1,4 +1,5 @@
 {
+  "demo_revision": "2",
   "customers": [
     {
       "name": "青禾成套",
@@ -9,6 +10,21 @@
       "name": "南浦配电",
       "contact": "计划 陈工",
       "note": "区域经销商。电话 13800001002"
+    },
+    {
+      "name": "北岭工控",
+      "contact": "设备 王工",
+      "note": "项目型客户。电话 13800001003"
+    },
+    {
+      "name": "澄江新客",
+      "contact": "C老板",
+      "note": "尚未在 A公司下过单。电话 13800001007"
+    },
+    {
+      "name": "锦桥机电",
+      "contact": "采购 老赵",
+      "note": "演示回收站用。电话 13800001008"
     }
   ],
   "orders": [
@@ -35,6 +51,81 @@
       "available_qty": 200,
       "earliest_completion": "2026-11-15",
       "supply_note": "A公司存货"
+    },
+    {
+      "order_no": "ORD-020",
+      "customer_name": "青禾成套",
+      "product": "小型断路器",
+      "quantity": 60,
+      "delivery_date": "2026-11-12",
+      "status": "待确认",
+      "owner": "订单负责人",
+      "available_qty": 120,
+      "earliest_completion": "2026-11-08",
+      "supply_note": "A公司存货"
+    },
+    {
+      "order_no": "ORD-021",
+      "customer_name": "北岭工控",
+      "product": "交流接触器",
+      "quantity": 100,
+      "delivered_qty": 50,
+      "delivery_date": "2026-11-18",
+      "status": "已确认",
+      "owner": "销售",
+      "available_qty": 80,
+      "earliest_completion": "2026-11-12",
+      "supply_note": "A公司存货"
+    },
+    {
+      "order_no": "ORD-022",
+      "customer_name": "南浦配电",
+      "product": "塑壳断路器",
+      "quantity": 30,
+      "delivery_date": "2026-11-25",
+      "status": "待确认取消",
+      "owner": "订单负责人",
+      "available_qty": 200,
+      "earliest_completion": "2026-11-15",
+      "supply_note": "A公司存货"
+    },
+    {
+      "order_no": "ORD-023",
+      "customer_name": "北岭工控",
+      "product": "热继电器",
+      "quantity": 20,
+      "delivery_date": "2026-10-15",
+      "status": "已取消",
+      "owner": "订单负责人",
+      "available_qty": 36,
+      "earliest_completion": "2026-11-12",
+      "supply_note": "A公司存货"
+    },
+    {
+      "order_no": "ORD-024",
+      "customer_name": "北岭工控",
+      "product": "框架断路器",
+      "quantity": 12,
+      "delivered_qty": 12,
+      "delivery_date": "2026-09-30",
+      "status": "已关闭",
+      "owner": "订单负责人",
+      "available_qty": 40,
+      "earliest_completion": "2026-09-20",
+      "supply_note": "A公司存货"
+    },
+    {
+      "order_no": "ORD-025",
+      "customer_name": "锦桥机电",
+      "product": "微型断路器",
+      "quantity": 45,
+      "delivery_date": "2026-12-05",
+      "status": "已确认",
+      "owner": "销售",
+      "available_qty": 60,
+      "earliest_completion": "2026-11-28",
+      "supply_note": "A公司存货",
+      "deleted_at": "2026-10-20T09:00:00"
     }
   ],
   "products": [
@@ -48,6 +139,18 @@
       "product": "热继电器",
       "on_hand": 36,
       "earliest_completion": "2026-11-12",
+      "note": "A公司存货"
+    },
+    {
+      "product": "框架断路器",
+      "on_hand": 40,
+      "earliest_completion": "2026-09-20",
+      "note": "A公司存货"
+    },
+    {
+      "product": "微型断路器",
+      "on_hand": 60,
+      "earliest_completion": "2026-11-28",
       "note": "A公司存货"
     }
   ],
@@ -66,7 +169,44 @@
       "owner": "订单负责人",
       "due_date": "2026-11-18",
       "status": "进行中",
-      "reason": "演示：第二笔待办。"
+      "reason": "演示：进行中的任务。"
+    },
+    {
+      "order_no": "ORD-021",
+      "title": "安排交流接触器剩余 50 件发货",
+      "owner": "仓库",
+      "due_date": "2026-11-16",
+      "status": "已完成",
+      "reason": "演示：部分交付后收尾。"
+    },
+    {
+      "order_no": "ORD-024",
+      "title": "归档框架断路器交付记录",
+      "owner": "订单负责人",
+      "due_date": "2026-10-05",
+      "status": "已关闭",
+      "reason": "演示：已关闭订单上的任务。"
+    },
+    {
+      "order_no": "ORD-018",
+      "title": "核对青禾成套发票抬头",
+      "owner": "销售",
+      "due_date": "2026-11-08",
+      "status": "待处理",
+      "reason": "演示：与主案例同客户的常规待办。"
+    }
+  ],
+  "seed_scenarios": [
+    {
+      "order_no": "ORD-020",
+      "sample_id": "ord018-conflict"
+    }
+  ],
+  "seed_intakes": [
+    {
+      "customer_name": "澄江新客",
+      "title": "规格未说清",
+      "text": "[2026-10-24 11:02] 澄江新客 C老板\n林晓，我们以前没有在 A公司下过单。要一批断路器，尽快安排。电话 13800001007。\n\n[2026-10-24 11:08] 销售 林晓\n极数、电流、数量和哪一天要，这四样都还没说。我先不建订单。"
     }
   ],
   "samples": [
