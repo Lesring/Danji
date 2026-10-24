@@ -9,6 +9,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("LLM_API_KEY", "")
     monkeypatch.setenv("OCR_API_KEY", "")
     monkeypatch.setenv("ASR_API_KEY", "")
+    monkeypatch.setenv("DANJI_SEED_TASKS", "0")
     from app.db import reset_engine
     from app.main import create_app
 

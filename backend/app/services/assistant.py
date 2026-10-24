@@ -552,7 +552,7 @@ def _patch_task(db: Session, rows: list[tuple[Order, str]], item: dict) -> Outco
     )
 
 
-WAREHOUSE_NOTE = "A公司成品仓"
+WAREHOUSE_NOTE = "A公司存货"
 
 
 def _warehouse_rows(db: Session) -> list[dict]:
@@ -600,16 +600,18 @@ def _merge_warehouse_intent(db: Session, messages: list[dict], data: dict) -> No
     if items:
         actions.append({"type": "update_supplies", "items": items})
         data["reply"] = (
-            "可以，不限当前页面。这些商品都在 A公司成品仓。"
-            "确认后只把商品详情改成「A公司成品仓」，在手数量、最早可完工日期和订单都不改。"
+            f"可以，不限当前页面。这些商品都在 {WAREHOUSE_NOTE}。"
+            f"确认后只把商品详情改成「{WAREHOUSE_NOTE}」，在手数量、最早可完工日期和订单都不改。"
         )
     else:
-        data["reply"] = "仓库里的商品详情已经只剩「A公司成品仓」，没有要改的。"
+        data["reply"] = f"仓库里的商品详情已经只剩「{WAREHOUSE_NOTE}」，没有要改的。"
     data["actions"] = actions
 
 
 def _wants_warehouse_label_only(compact: str) -> bool:
-    if "仓库" not in compact or "成品仓" not in compact:
+    if "仓库" not in compact:
+        return False
+    if "成品仓" not in compact and "存货" not in compact:
         return False
     keep = "只保留" in compact or "仅保留" in compact
     wipe = any(word in compact for word in ("删", "清空", "去掉", "清除"))
@@ -645,7 +647,7 @@ def _update_supplies(db: Session, item: dict) -> Outcome:
     if not kept:
         return Outcome(note=notes[0] if notes else None)
     if len(kept) > 1 and all(row.get("note") == WAREHOUSE_NOTE for row in kept):
-        summary = f"把 {len(kept)} 个商品的详情改为「A公司成品仓」，不改在手数量、最早可完工日期和订单。"
+        summary = f"把 {len(kept)} 个商品的详情改为「{WAREHOUSE_NOTE}」，不改在手数量、最早可完工日期和订单。"
     elif len(kept) == 1:
         summary = f"更新仓库里的「{kept[0]['product']}」，不改订单。"
     else:

@@ -9,26 +9,6 @@
       "name": "南浦配电",
       "contact": "计划 陈工",
       "note": "区域经销商。电话 13800001002"
-    },
-    {
-      "name": "江北盘厂",
-      "contact": "采购 赵敏",
-      "note": "成套厂。电话 13800001003"
-    },
-    {
-      "name": "临海盘厂",
-      "contact": "计划 孙磊",
-      "note": "成套厂。电话 13800001004"
-    },
-    {
-      "name": "澄江仪表",
-      "contact": "采购 小周",
-      "note": "配套厂。电话 13800001005"
-    },
-    {
-      "name": "滨海安装",
-      "contact": "项目 吴工",
-      "note": "安装公司。电话 13800001006。产线暂停后这单待确认取消"
     }
   ],
   "orders": [
@@ -42,7 +22,7 @@
       "owner": "订单负责人",
       "available_qty": 120,
       "earliest_completion": "2026-11-08",
-      "supply_note": "A公司成品仓。公开样本小型断路器 NXB-63。本仓在手 120 件；若增加数量，最早可完工日期 2026-11-08。"
+      "supply_note": "A公司存货"
     },
     {
       "order_no": "ORD-019",
@@ -54,55 +34,7 @@
       "owner": "订单负责人",
       "available_qty": 200,
       "earliest_completion": "2026-11-15",
-      "supply_note": "A公司成品仓。公开样本塑壳断路器 NM1。本仓在手 200 件，最早可完工日期 2026-11-15。库存内改数量仍可交。"
-    },
-    {
-      "order_no": "ORD-020",
-      "customer_name": "江北盘厂",
-      "product": "框架断路器",
-      "quantity": 8,
-      "delivery_date": "2026-11-28",
-      "status": "已确认",
-      "owner": "订单负责人",
-      "available_qty": 3,
-      "earliest_completion": "2026-11-18",
-      "supply_note": "A公司成品仓。配电电器里的框架断路器，单台体积大，本仓在手只有 3 台。订单 8 台，超出在手。最早可完工日期 2026-11-18，订单交期 2026-11-28 晚于该日。"
-    },
-    {
-      "order_no": "ORD-021",
-      "customer_name": "临海盘厂",
-      "product": "漏电断路器",
-      "quantity": 48,
-      "delivery_date": "2026-10-27",
-      "status": "已确认",
-      "owner": "订单负责人",
-      "available_qty": 200,
-      "earliest_completion": "2026-11-04",
-      "supply_note": "A公司成品仓。公开样本漏电断路器 NXBLE。在手 200 只，数量够。订单交期 2026-10-27 早于最早可完工日期 2026-11-04。"
-    },
-    {
-      "order_no": "ORD-022",
-      "customer_name": "澄江仪表",
-      "product": "交流电流表",
-      "quantity": 30,
-      "delivery_date": "2026-11-12",
-      "status": "已确认",
-      "owner": "订单负责人",
-      "available_qty": 80,
-      "earliest_completion": "2026-11-02",
-      "supply_note": "A公司成品仓。仪器仪表里的交流电流表。在手 80 只，订单 30 只，订单交期 2026-11-12 晚于最早可完工日期 2026-11-02。"
-    },
-    {
-      "order_no": "ORD-023",
-      "customer_name": "滨海安装",
-      "product": "电能表",
-      "quantity": 16,
-      "delivery_date": "2026-11-20",
-      "status": "待确认取消",
-      "owner": "订单负责人",
-      "available_qty": 40,
-      "earliest_completion": "2026-11-08",
-      "supply_note": "A公司成品仓。仪器仪表里的电能表。客户项目暂停，订单待确认取消，不再占用在手。"
+      "supply_note": "A公司存货"
     }
   ],
   "products": [
@@ -110,13 +42,31 @@
       "product": "交流接触器",
       "on_hand": 80,
       "earliest_completion": "2026-11-12",
-      "note": "A公司成品仓。控制电器，公开样本交流接触器 CJX2。本仓在手 80 件；最早可完工日期 2026-11-12。"
+      "note": "A公司存货"
     },
     {
       "product": "热继电器",
       "on_hand": 36,
       "earliest_completion": "2026-11-12",
-      "note": "A公司成品仓。与交流接触器配套的热继电器。本仓在手 36 件；最早可完工日期 2026-11-12。"
+      "note": "A公司存货"
+    }
+  ],
+  "seed_tasks": [
+    {
+      "order_no": "ORD-019",
+      "title": "确认客户是否接受分批交付或调整交期",
+      "owner": "销售",
+      "due_date": "2026-11-05",
+      "status": "待处理",
+      "reason": "演示：跟进项示例。"
+    },
+    {
+      "order_no": "ORD-019",
+      "title": "核实塑壳断路器 80 件交期与产能",
+      "owner": "订单负责人",
+      "due_date": "2026-11-18",
+      "status": "进行中",
+      "reason": "演示：第二笔待办。"
     }
   ],
   "samples": [

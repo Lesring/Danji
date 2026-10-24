@@ -1,3 +1,5 @@
+import os
+
 from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session
 
@@ -15,6 +17,7 @@ from app.models import (
     SupplyConstraint,
     Task,
     TaskSuggestion,
+    now_iso,
 )
 from app.services.supply import supply_key
 
@@ -167,7 +170,39 @@ def seed_if_empty(db: Session) -> None:
                 )
             )
     ensure_catalog_supplies(db)
+    _seed_demo_tasks(db, demo)
     db.flush()
+
+
+def _seed_demo_tasks(db: Session, demo: dict) -> None:
+    if os.getenv("DANJI_SEED_TASKS", "1").strip() == "0":
+        return
+    rows = demo.get("seed_tasks") or []
+    if not rows:
+        return
+    if db.scalar(select(Task.id).limit(1)) is not None:
+        return
+    orders = {order.order_no: order for order in db.scalars(select(Order))}
+    stamp = now_iso()
+    for item in rows:
+        order_no = (item.get("order_no") or "").strip()
+        order = orders.get(order_no)
+        if order is None:
+            continue
+        db.add(
+            Task(
+                order_id=order.id,
+                order_no=order.order_no,
+                suggestion_key=f"seed-{order.id}-{len(item.get('title') or '')}",
+                title=(item.get("title") or "待办")[:200],
+                owner=(item.get("owner") or "")[:80],
+                due_date=(item.get("due_date") or None),
+                status=(item.get("status") or "待处理")[:20],
+                reason=(item.get("reason") or "")[:2000],
+                created_at=stamp,
+                updated_at=stamp,
+            )
+        )
 
 
 def ensure_catalog_supplies(db: Session) -> None:

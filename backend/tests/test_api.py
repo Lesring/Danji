@@ -835,10 +835,6 @@ def test_seeded_warehouse_lists_regional_stock(client):
     expected = {
         "小型断路器": (120, "2026-11-08"),
         "塑壳断路器": (200, "2026-11-15"),
-        "框架断路器": (3, "2026-11-18"),
-        "漏电断路器": (200, "2026-11-04"),
-        "交流电流表": (80, "2026-11-02"),
-        "电能表": (40, "2026-11-08"),
         "交流接触器": (80, "2026-11-12"),
         "热继电器": (36, "2026-11-12"),
     }
@@ -994,21 +990,15 @@ def test_assistant_keeps_finished_warehouse_label_from_workbench(client, monkeyp
         "/assistant/turn",
         json={
             "route": "workbench",
-            "messages": [{"role": "user", "content": "把仓库内商品详情都删去，只保留A公司成品仓"}],
+            "messages": [{"role": "user", "content": "把仓库内商品详情都删去，只保留A公司存货"}],
         },
     )
     assert turned.status_code == 200, turned.text
     body = turned.json()
     assert "不支持" not in body["reply"]
-    assert "A公司成品仓" in body["reply"]
-    action = body["actions"][0]
-    assert action["type"] == "update_supplies"
-    assert action["items"]
-    assert {item["note"] for item in action["items"]} == {"A公司成品仓"}
-    assert all("quantity" not in item and "delivery_date" not in item for item in action["items"])
-    names = {item["product"] for item in action["items"]}
-    assert "小型断路器" in names
-    assert "热继电器" in names
+    assert "A公司存货" in body["reply"]
+    assert body["actions"] == []
+    assert "已经只剩" in body["reply"]
 
 
 def test_assistant_will_not_delete_supply_still_on_an_order(client, monkeypatch):
@@ -1264,10 +1254,10 @@ def _set_order_status(order_no: str, status: str) -> None:
 
 
 def test_two_customers_share_one_product_pool(client):
-    meter = _warehouse(client, "电能表")
-    assert meter["on_hand"] == 40
-    assert meter["reserved"] == 0
-    assert meter["committable"] == 40
+    meter = _warehouse(client, "塑壳断路器")
+    assert meter["on_hand"] == 200
+    assert meter["reserved"] == 80
+    assert meter["committable"] == 120
 
     base = _order(client, "ORD-018")
     other_customer = _order(client, "ORD-019")
@@ -1474,14 +1464,10 @@ def test_manual_reset_keeps_warehouse_and_empties_workbench(client):
     assert names == {
         "小型断路器",
         "塑壳断路器",
-        "框架断路器",
-        "漏电断路器",
-        "交流电流表",
-        "电能表",
         "交流接触器",
         "热继电器",
     }
     breaker = next(item for item in warehouse if item["product"] == "小型断路器")
     assert breaker["on_hand"] == 120
     assert breaker["earliest_completion"] == "2026-11-08"
-    assert "NXB-63" in breaker["note"]
+    assert breaker["note"] == "A公司存货"
