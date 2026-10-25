@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import { RouterLink, RouterView } from "vue-router";
+import { RouterLink, RouterView, useRoute } from "vue-router";
 import AssistantDrawer from "./components/AssistantDrawer.vue";
 import EvidenceDrawer from "./components/EvidenceDrawer.vue";
 import { useWorkspaceStore } from "./stores/workspace";
 
 const store = useWorkspaceStore();
+const route = useRoute();
 const railOpen = ref(localStorage.getItem("danji-rail-open") !== "0");
 const assistantOpen = ref(false);
 
@@ -22,6 +23,23 @@ onMounted(() => {
 
 <template>
   <div class="shell" :class="{ 'rail-collapsed': !railOpen }">
+    <header class="mobile-top">
+      <div class="mobile-brand">
+        <span class="mobile-mark" aria-hidden="true">迹</span>
+        <div>
+          <strong>单迹</strong>
+          <small>{{ store.extractMode === "fixture" ? "本地夹具" : "模型解析" }}</small>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="mobile-talk"
+        :aria-expanded="assistantOpen"
+        @click="assistantOpen = !assistantOpen"
+      >
+        对话
+      </button>
+    </header>
     <aside class="rail" :class="{ collapsed: !railOpen }">
       <div class="brand">
         <button
@@ -69,5 +87,10 @@ onMounted(() => {
     </main>
     <EvidenceDrawer />
     <AssistantDrawer v-model="assistantOpen" />
+    <nav class="mobile-tabs" aria-label="页面">
+      <RouterLink to="/" :class="{ 'is-current': route.name === 'workbench' || route.name === 'review' }">工作台</RouterLink>
+      <RouterLink to="/tasks" :class="{ 'is-current': route.name === 'tasks' }">任务</RouterLink>
+      <RouterLink to="/warehouse" :class="{ 'is-current': route.name === 'warehouse' }">仓库</RouterLink>
+    </nav>
   </div>
 </template>

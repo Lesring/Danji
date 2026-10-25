@@ -22,6 +22,8 @@ const showTrash = ref(false);
 const customerFilter = ref<string | null>(null);
 const productFilter = ref<string | null>(null);
 const showImports = ref(false);
+const mobileList = ref(true);
+const phoneLayout = window.matchMedia("(max-width: 768px), (pointer: coarse) and (max-width: 1024px)");
 
 const customerNames = computed(() =>
   unique([...customers.value.map((item) => item.name), ...allOrders.value.map((item) => item.customer_name)]),
@@ -68,10 +70,21 @@ async function loadOrders() {
   customers.value = people;
 }
 
-async function selectOrder(id: number) {
+function revealDetail() {
+  mobileList.value = false;
+  if (phoneLayout.matches) window.scrollTo(0, 0);
+}
+
+function backToList() {
+  mobileList.value = true;
+  if (phoneLayout.matches) window.scrollTo(0, 0);
+}
+
+async function selectOrder(id: number, fromUser = false) {
   selectedCustomerId.value = null;
   selectedId.value = id;
   detail.value = await api.order(id);
+  if (fromUser) revealDetail();
 }
 
 function selectCustomer(id: number) {
@@ -79,6 +92,7 @@ function selectCustomer(id: number) {
   detail.value = null;
   selectedCustomerId.value = id;
   store.contextOrderId = null;
+  revealDetail();
 }
 
 function openWarehouse() {
@@ -97,7 +111,7 @@ async function onCreated(payload: { orderId: number | null; customerId: number }
   productFilter.value = null;
   showTrash.value = false;
   await loadOrders();
-  if (payload.orderId) await selectOrder(payload.orderId);
+  if (payload.orderId) await selectOrder(payload.orderId, true);
   else selectCustomer(payload.customerId);
 }
 
@@ -200,7 +214,7 @@ onMounted(loadOrders);
 </script>
 
 <template>
-  <section class="page">
+  <section class="page" :class="{ 'show-mobile-list': mobileList }">
     <header class="page-head">
       <div>
         <h1>{{ showTrash ? "回收站" : "订单工作台" }}</h1>
@@ -243,7 +257,7 @@ onMounted(loadOrders);
           class="order-row"
           :class="{ active: order.id === selectedId }"
         >
-          <button class="order-button" @click="selectOrder(order.id)">
+          <button class="order-button" @click="selectOrder(order.id, true)">
             <strong>{{ order.order_no }} · {{ order.customer_name }}</strong>
             <span class="muted">{{ order.product }} · {{ order.status }}</span>
             <span class="muted" v-if="order.pending_count">{{ order.pending_count }} 条待确认</span>
@@ -262,7 +276,8 @@ onMounted(loadOrders);
           </div>
         </div>
       </div>
-      <div class="panel" v-if="selectedCustomer && !selected">
+      <div class="panel detail-panel" v-if="selectedCustomer && !selected">
+        <button type="button" class="mobile-back" @click="backToList">返回列表</button>
         <div class="section">
           <div class="card-top">
             <h2>{{ selectedCustomer.name }}</h2>
@@ -273,7 +288,8 @@ onMounted(loadOrders);
           <p>这个客户还没有订单。点「新建订单」添加第一张，之后还可以继续加。</p>
         </div>
       </div>
-      <div class="panel" v-else-if="detail && selected">
+      <div class="panel detail-panel" v-else-if="detail && selected">
+        <button type="button" class="mobile-back" @click="backToList">返回列表</button>
         <div class="facts">
           <div class="fact">
             <span>订单数量</span>

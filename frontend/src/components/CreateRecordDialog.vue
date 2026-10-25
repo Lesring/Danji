@@ -379,7 +379,7 @@ async function submit() {
           <p class="muted" style="margin: 0 0 8px">表里有 {{ sheetLines.length }} 行，会建成 {{ sheetLines.length }} 张订单。订单号、在手数量和最早可完工日期表里没有的，请逐行补上。</p>
           <div v-for="(line, index) in sheetLines" :key="index" style="padding: 8px 0; border-top: 1px solid #e4ded4">
             <strong>{{ index + 1 }}. {{ line.product || "未命名商品" }}</strong>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px">
+            <div class="line-fields" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px">
               <el-input v-model="line.orderNo" maxlength="40" placeholder="订单号" style="width: 140px" />
               <el-input-number v-model="line.quantity" :min="1" :step="1" :value-on-clear="null" controls-position="right" />
               <el-date-picker v-model="line.deliveryDate" type="date" value-format="YYYY-MM-DD" placeholder="订单交期" />

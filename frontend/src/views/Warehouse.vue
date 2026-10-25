@@ -247,15 +247,15 @@ onMounted(load);
               <strong>{{ row.product }}</strong>
               <div class="muted" v-if="row.note">{{ row.note }}</div>
             </td>
-            <td>
+            <td data-label="在手">
               <el-input-number v-model="row.draftOnHand" :min="0" :step="1" controls-position="right" />
             </td>
-            <td>{{ row.reserved }} 件</td>
-            <td :class="{ danger: row.committable < 0 }">{{ row.committable }} 件</td>
-            <td>
+            <td data-label="已占用">{{ row.reserved }} 件</td>
+            <td data-label="还可承诺" :class="{ danger: row.committable < 0 }">{{ row.committable }} 件</td>
+            <td data-label="最早可完工">
               <el-date-picker v-model="row.draftEarliest" type="date" value-format="YYYY-MM-DD" placeholder="最早可完工日期" />
             </td>
-            <td class="muted">{{ stamp(row) }}</td>
+            <td data-label="更新" class="muted">{{ stamp(row) }}</td>
             <td>
               <div class="warehouse-actions">
                 <el-button type="primary" :loading="row.saving" @click="save(row)">保存</el-button>
